@@ -31,85 +31,31 @@ using CMAEvolutionStrategy # Global Optimizer
 
 include("sim_data_like_Parallel.jl")
 include("loglikefn.jl")
-#include("readInData.jl")
+include("readInData.jl")
 include("HelperFuncsParallel.jl")
 include("ExamineResults.jl")
 
-rawdataallvars = CSV.File("Combined_All2013.csv"; header=true) |> DataFrame;
+FullData = ReadInData()
+Compparams = (n_firms=length(FullData.up_data_obs[:,1]), n_sim=10, trim_percent=0, 
+                    hmethod=4, nparams=92, logcompdum=0, dist=Normal);
 
-rawdataselectvars = rawdataallvars[:,[:CEOpos_NumJobs_NumInd, :revenue_residual, 
-                    :size_LogTotalAsset, :num_seg, :tot_yr_comp, :annual_StockReturn, :adj_roa]];
-
-rawdata_nomissing = dropmissing(rawdataselectvars);
-
-Compparams = (n_firms=length(rawdata_nomissing.CEOpos_NumJobs_NumInd), n_sim=10, trim_percent=0, 
-                hmethod=4, nparams=92, logcompdum=1, dist=Normal);
-
-RawData = (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd) copy(rawdata_nomissing.revenue_residual) ones(Compparams.n_firms)], 
-    down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset) copy(rawdata_nomissing.num_seg) ones(Compparams.n_firms)], 
-    wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
-    measures_obs = [copy(rawdata_nomissing.annual_StockReturn) copy(rawdata_nomissing.adj_roa)]);
-
-absmax = (CEOpos_NumJobs_NumInd = maximum([abs.([maximum(rawdata_nomissing.CEOpos_NumJobs_NumInd)]),
-                                    abs.([minimum(rawdata_nomissing.CEOpos_NumJobs_NumInd)])]),
-        revenue_residual = maximum([abs.([maximum(rawdata_nomissing.revenue_residual)]),
-                                    abs.([minimum(rawdata_nomissing.revenue_residual)])]),
-        size_LogTotalAsset = maximum([abs.([maximum(rawdata_nomissing.size_LogTotalAsset)]),
-                                    abs.([minimum(rawdata_nomissing.size_LogTotalAsset)])]),                           
-        num_seg = maximum([abs.([maximum(rawdata_nomissing.num_seg)]),
-                                    abs.([minimum(rawdata_nomissing.num_seg)])]))                           
-
-RenormData = (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd)./absmax.CEOpos_NumJobs_NumInd  copy(rawdata_nomissing.revenue_residual)./absmax.revenue_residual  ones(Compparams.n_firms)], 
-            down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset)./absmax.size_LogTotalAsset copy(rawdata_nomissing.num_seg)./absmax.num_seg ones(Compparams.n_firms)], 
-            wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
-            measures_obs = [copy(rawdata_nomissing.annual_StockReturn) copy(rawdata_nomissing.adj_roa)]);
+cutlength = 30; #take first 300 obs to spead up for now.
+InitData = CutData(cutlength,FullData)
 
 quasi_seed = rand(UInt64) + hash(time_ns());  
 # create a seed based on the current time and a random number
 # create a random number generator with the seed
-cutlength = 300; #take first 300 obs to spead up for now. 
-InitData = (up_data_obs = copy(RenormData.up_data_obs[1:cutlength,:]), 
-            down_data_obs = copy(RenormData.down_data_obs[1:cutlength,:]), 
-            wages_obs = copy(RenormData.wages_obs[1:cutlength]), 
-            measures_obs = copy(RenormData.measures_obs[1:cutlength,:]));
 
 
-Initparams = (n_firms=length(rawdata_nomissing.CEOpos_NumJobs_NumInd[1:cutlength]), n_sim=10, trim_percent=10, hmethod=4, nparams=92, logcompdum=1, dist=Normal)
 
-h = zeros(5);
 #hmethod==4
 if (Compparams.hmethod==4)
-    # Optimize over choice of h
-    #res_bcv = Optim.optimize(h -> bcv2_fun(h,RenormData,Compparams.n_firms,Compparams.logcompdum), rand(5))
-    # res_bcv = Optim.optimize(bcv2_fun, rand(3),BFGS(),autodiff = :forward)
-                  
-    #h = abs.(Optim.minimizer(res_bcv))
-    make_closuresH(Data,n_firms,n_sim,logcompdum) = h -> bcv2_fun(h,Data,n_firms,n_sim,logcompdum)
-    hfun = make_closuresH(RenormData,Initparams.n_firms,Initparams.n_sim,Initparams.logcompdum)
-
-    res_CMAE = CMAEvolutionStrategy.minimize(hfun,rand(5), 1.,
-    lower = zeros(5),
-     upper = 5000*ones(5),
-     noise_handling = 1.,
-     callback = (object, inputs, function_values, ranks) -> nothing,
-     parallel_evaluation = false,
-     multi_threading = false,
-     verbosity = 1,
-     seed = rand(UInt),
-     maxtime = 10000,
-     maxiter = nothing,
-     maxfevals = nothing,
-     ftarget = nothing,
-     xtol = nothing,
-     ftol = 1e-3)
-    # # # Estimated parameters: 
-     h = xbest(res_CMAE)
+    h = GetH_BCV2(FullData,Compparams.n_firms,Compparams.n_sim,Compparams.logcompdum)
 else 
     h = zeros(5)
 end 
 
-
-
+#setup to estimate full parameter vector
 igrid = Vector{Integer}(1:Compparams.nparams);              
 
 lb= Array{Float64}(undef,0) 
@@ -130,10 +76,19 @@ b_cal = [0.0];
 igrid = Vector{Integer}(1:Compparams.nparams);              
 i_est = deleteat!(igrid,Compparams.nparams-19);
 b_est = b_init
-b_est = parse.(Float64,split(last(eachline("TestNewIterate0613Normal.csv")),","));
+### Optional way to initialize parameters if file available
+b_est = parse.(Float64,split(last(eachline("TestNewIterate0630.csv")),","));
+#######
 deleteat!(b_est,Compparams.nparams-19);
+
+#@run loglikepr(b_est,b_cal,i_cal,InitData,h,quasi_seed,Initparams;multithread=false)
+
 make_closures(b_cal,i_cal,Data,h,quasi_seed,params;multithread) = b_est -> -loglikepr(b_est,b_cal,i_cal,Data,h,quasi_seed,params;multithread)
 nll = make_closures(b_cal,i_cal,InitData,h,quasi_seed, Initparams;multithread=true)
+
+#estimate via Optim
+res = Optim.optimize(nll, b_est, Optim.Options(time_limit=50000, iterations=40000))
+#estimate via Evolutionary Algorithm
 res_CMAE = CMAEvolutionStrategy.minimize(nll,b_est, 1.,
         lower = lb,
          upper = ub,
@@ -143,7 +98,7 @@ res_CMAE = CMAEvolutionStrategy.minimize(nll,b_est, 1.,
          multi_threading = false,
          verbosity = 1,
          seed = rand(UInt),
-         maxtime = 10000,
+         maxtime = 100000,
          maxiter = nothing,
          maxfevals = nothing,
          ftarget = nothing,
@@ -166,7 +121,7 @@ b_init[Compparams.nparams-18:Compparams.nparams]=xbest(res_CMAE)[Compparams.npar
 CSV.write("TestNewIterate0613Normal.csv", Tables.table(b_init'), append=true) 
         #CSV.write("saminResults.csv", Tables.table(conv'), append=true) 
     
-Initparams = (n_firms=length(rawdata_nomissing.CEOpos_NumJobs_NumInd[1:cutlength]), n_sim=10, trim_percent=10, hmethod=4, nparams=92, logcompdum=1, dist=Cauchy)
+Initparams = (n_firms=length(InitData.up_data_obs[:,1]), n_sim=10, trim_percent=10, hmethod=4, nparams=92, logcompdum=1, dist=Cauchy)
 nll2 = make_closures(b_cal,i_cal,InitData,h,quasi_seed, Initparams;multithread=true)
 
         res_CMAE = CMAEvolutionStrategy.minimize(nll2,b_est, 1.,
@@ -203,7 +158,7 @@ nll2 = make_closures(b_cal,i_cal,InitData,h,quasi_seed, Initparams;multithread=t
 
 
 
-resParams = parse.(Float64,split(last(eachline("TestNewIterate0613Normal.csv")),","));
+resParams = parse.(Float64,split(last(eachline("TestNewIterate0613Cauchy.csv")),","));
 SimP = StrucParams(resParams)
 AvgSimData, SimData = CreateNewSimData(InitData,quasi_seed,Initparams,SimP;multithread=false)
 using Plots

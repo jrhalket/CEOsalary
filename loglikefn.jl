@@ -30,7 +30,7 @@
 
     LLp = StrucParams(b);
     if !isposdef(LLp.Σ)  #check positive def cov matrix
-        llnf = -2.0^10
+        llnf = -2.0^50
         return llnf
     end
 
@@ -43,7 +43,7 @@
     end
     
     #if any(isnan(sim_dat[1:LLC.n_sim].down_match[1,1]))
-    #    llnf = -2.0^10
+    #    llnf = -2.0^50
     #else
             #parallel version: sim_dat = pmap(solve_draw, 1:n_sim)
         #outputs from sim_data_like: up_data, down_match_sim, wages_match, measures_match
@@ -129,12 +129,7 @@
             delta_trim = log(percentile(like,LLC.trim_percent))/log(havg); 
             #println(percentile(like,LLC.trim_percent),", ",log(percentile(like,LLC.trim_percent)),", ",log(hall),", ",delta_trim)
             if isinf(abs(delta_trim)) #if above trim fn yields computational zeros, then we need less smooth trim fn        
-                hd = percentile(like,LLC.trim_percent)
-                tau_trim =zeros(LLC.n_firms)
-                tau_trim .= (like.-hd)./(2.0*hd) 
-                tau_trim[like .<= hd] .=0.0
-                tau_trim[like .> 2.0*hd] .=1.0  
-                maxtau = findmax(tau_trim)
+                return llnf =  -2.0^50
             else  
                 hd =  havg^delta_trim; #ensure hd, hd3, hd4 are not computationally zero
                 hd3 = hd^3.0;
@@ -153,7 +148,7 @@
 
         ll = 0 
         if tau_trim==0.0 || isnan(maxtau[1]) || maxtau[1]<=0.00001
-            ll =  -2.0^10
+            ll =  -2.0^50
         else
             for i in 1:LLC.n_firms
                 if tau_trim[i]>0.0    
@@ -169,10 +164,10 @@
         end
         llnf = ll/LLC.n_firms
         if isnan(llnf)
-            llnf = -2.0^10
+            llnf = -2.0^50
         end
     else
-        llnf = -2.0^10
+        llnf = -2.0^50
     end
    return llnf 
 
