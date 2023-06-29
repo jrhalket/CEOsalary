@@ -59,65 +59,51 @@
         #    data[:,5] = view(measures_obs,:,2);
         for i in 1:LLC.n_sim
             dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,1] = Data.down_data_obs[:,1] .- sim_dat[i].down_match[:,1];
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,2] = Data.down_data_obs[:,2] .- sim_dat[i].down_match[:,2];
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,3] = (Data.wages_obs) .- (sim_dat[i].wages_match[:]);
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,4] = Data.measures_obs[:,1] .- sim_dat[i].measures_match[:,1];
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,5] = Data.measures_obs[:,2] .- sim_dat[i].measures_match[:,2];
-        end
+            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,2] = (Data.wages_obs) .- (sim_dat[i].wages_match[:]);
+            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,3] = Data.measures_obs[:,1] .- sim_dat[i].measures_match[:,1];
+        end    
         if (LLC.hmethod==1)
             #Silverman's Rule of thumb:
             Iqrnorm = 1.34;
             A = [min(std(dataWithSim[:,1]),StatsBase.iqr(dataWithSim[:,1])/Iqrnorm),
                 min(std(dataWithSim[:,2]),StatsBase.iqr(dataWithSim[:,2])/Iqrnorm),
-                min(std(dataWithSim[:,3]),StatsBase.iqr(dataWithSim[:,3])/Iqrnorm),
-                min(std(dataWithSim[:,4]),StatsBase.iqr(dataWithSim[:,4])/Iqrnorm),
-                min(std(dataWithSim[:,5]),StatsBase.iqr(dataWithSim[:,5])/Iqrnorm)];
+                min(std(dataWithSim[:,3]),StatsBase.iqr(dataWithSim[:,3])/Iqrnorm)]
             h=0.9 * A * (LLC.n_firms*LLC.n_sim)^(-0.2);
         elseif (LLC.hmethod==2)
             #Using Sheather and Jones (1991) bandwidth
             #h = zeros(5);
             h = [KernelDensitySJ.bwsj(dataWithSim[:,1]), 
                 KernelDensitySJ.bwsj(dataWithSim[:,2]),
-                KernelDensitySJ.bwsj(dataWithSim[:,3]),
-                KernelDensitySJ.bwsj(dataWithSim[:,4]),
-                KernelDensitySJ.bwsj(dataWithSim[:,5])];
+                KernelDensitySJ.bwsj(dataWithSim[:,3])];
         elseif (LLC.hmethod==3)
             # Scott(1992)'s rule for normal multivariate densities
             #h_i = (4/(d + 2))^(1/(d+4))  * σ_i  n^(−1/(d+4))  where
             # n = num simulations
             # d = number of variables (i.e. 2 obs match, watch and 2 measures --> d=5)
             # σ_i is the std dev of each variable i 
-            h = (4/(5+2)* 1/LLC.n_sim)^(1/(5+4)) .* 
+            h = (4/(3+2)* 1/LLC.n_sim)^(1/(3+4)) .* 
                     [std(dataWithSim[:,1]),
                     std(dataWithSim[:,2]),
-                    std(dataWithSim[:,3]),
-                    std(dataWithSim[:,4]),
-                    std(dataWithSim[:,5])];                                                    
+                    std(dataWithSim[:,3])];                                                    
         end
     end
     like = zeros(LLC.n_firms);
     hall = prod(h);
     
-    havg = hall^(1/5);
+    havg = hall^(1/3);
   
     for i in 1:LLC.n_firms
         for j in 1:LLC.n_sim
             if LLC.logcompdum ==0
                 like[i]+=exp( 
                 logpdf(LLC.dist(),(Data.down_data_obs[i,1] - sim_dat[j].down_match[i,1])/h[1])
-                + logpdf(LLC.dist(),(Data.down_data_obs[i,2] - sim_dat[j].down_match[i,2])/h[2])
-                + logpdf(LLC.dist(),(Data.wages_obs[i] - sim_dat[j].wages_match[i])/h[3])
-                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i,1])/h[4])
-                + logpdf(LLC.dist(),(Data.measures_obs[i,2] - sim_dat[j].measures_match[i,2])/h[5])
-                )
+                + logpdf(LLC.dist(),(Data.wages_obs[i] - sim_dat[j].wages_match[i])/h[2])
+                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i,1])/h[3]))
             else 
                 like[i]+=exp( 
                 logpdf(LLC.dist(),(Data.down_data_obs[i,1] - sim_dat[j].down_match[i,1])/h[1])
-                + logpdf(LLC.dist(),(Data.down_data_obs[i,2] - sim_dat[j].down_match[i,2])/h[2])
-                + logpdf(LLC.dist(),((Data.wages_obs[i] - sim_dat[j].wages_match[i])/Data.wages_obs[i])/h[3])
-                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i,1])/h[4])
-                + logpdf(LLC.dist(),(Data.measures_obs[i,2] - sim_dat[j].measures_match[i,2])/h[5])
-                ) 
+                + logpdf(LLC.dist(),((Data.wages_obs[i] - sim_dat[j].wages_match[i])/Data.wages_obs[i])/h[2])
+                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i,1])/h[3])) 
             end
         end
     end

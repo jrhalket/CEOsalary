@@ -1,4 +1,4 @@
-function ReadInData()
+function ReadInData(renormDummy)
 
 
     rawdataallvars = CSV.File("Combined_All2013.csv"; header=true) |> DataFrame;
@@ -10,12 +10,13 @@ function ReadInData()
     
     
     
-    RawData = (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd) copy(rawdata_nomissing.revenue_residual) ones(length(rawdata_nomissing.revenue_residual))], 
-        down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset) copy(rawdata_nomissing.num_seg) ones(length(rawdata_nomissing.revenue_residual))], 
+    RawData = (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd) ones(length(rawdata_nomissing.revenue_residual))], 
+        down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset) ones(length(rawdata_nomissing.revenue_residual))], 
         wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
-        measures_obs = [copy(rawdata_nomissing.annual_StockReturn) copy(rawdata_nomissing.adj_roa)]);
+        measures_obs = [copy(rawdata_nomissing.adj_roa)]);
     
-    absmax = (CEOpos_NumJobs_NumInd = maximum([abs.([maximum(rawdata_nomissing.CEOpos_NumJobs_NumInd)]),
+    if renormDummy ==1
+        absmax = (CEOpos_NumJobs_NumInd = maximum([abs.([maximum(rawdata_nomissing.CEOpos_NumJobs_NumInd)]),
                                         abs.([minimum(rawdata_nomissing.CEOpos_NumJobs_NumInd)])]),
             revenue_residual = maximum([abs.([maximum(rawdata_nomissing.revenue_residual)]),
                                         abs.([minimum(rawdata_nomissing.revenue_residual)])]),
@@ -24,12 +25,15 @@ function ReadInData()
             num_seg = maximum([abs.([maximum(rawdata_nomissing.num_seg)]),
                                         abs.([minimum(rawdata_nomissing.num_seg)])]))                           
     
-    RenormData =  (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd)./absmax.CEOpos_NumJobs_NumInd  copy(rawdata_nomissing.revenue_residual)./absmax.revenue_residual  ones(length(rawdata_nomissing.revenue_residual))], 
-                down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset)./absmax.size_LogTotalAsset copy(rawdata_nomissing.num_seg)./absmax.num_seg ones(length(rawdata_nomissing.revenue_residual))], 
+        RenormData =  (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd)./absmax.CEOpos_NumJobs_NumInd ones(length(rawdata_nomissing.revenue_residual))], 
+                down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset)./absmax.size_LogTotalAsset ones(length(rawdata_nomissing.revenue_residual))], 
                 wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
-                measures_obs = [copy(rawdata_nomissing.annual_StockReturn) copy(rawdata_nomissing.adj_roa)]);
+                measures_obs = [copy(rawdata_nomissing.annual_StockReturn)]);
     
-    return RenormData
+        return RenormData
+    else 
+        return RawData
+    end
 end
 function CutData(cutlength,FullData)
     InitData = (up_data_obs = copy(FullData.up_data_obs[1:cutlength,:]), 
@@ -49,9 +53,9 @@ function GetH_BCV2(DataIn,n_firms,n_sim,logcompdum)
     make_closuresH(Data,n_firms,n_sim,logcompdum) = h -> bcv2_fun(h,Data,n_firms,n_sim,logcompdum)
     hfun = make_closuresH(DataIn,n_firms,n_sim,logcompdum)
 
-    res_CMAE = CMAEvolutionStrategy.minimize(hfun,rand(5), 1.,
-    lower = zeros(5),
-     upper = 5000*ones(5),
+    res_CMAE = CMAEvolutionStrategy.minimize(hfun,rand(3), 1.,
+    lower = zeros(3),
+     upper = 5000*ones(3),
      noise_handling = 1.,
      callback = (object, inputs, function_values, ranks) -> nothing,
      parallel_evaluation = false,

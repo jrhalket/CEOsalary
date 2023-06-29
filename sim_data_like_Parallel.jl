@@ -35,7 +35,7 @@
         fill!(down_match_sim,NaN)
         wages_match_sim = zeros(CR.n_firms);
         fill!(wages_match_sim,NaN);
-        measures_match_sim = zeros(2,CR.n_firms);
+        measures_match_sim = zeros(1,CR.n_firms);
         fill!(measures_match_sim,NaN);
         Simout = SimOutputs(down_match_obs', wages_match_sim, measures_match_sim');
         return Simout
@@ -57,36 +57,19 @@
     
     
     SC = makeCoefs(up_data_obs_in,down_match_obs,CR.n_firms,p_in)
-    alpha_tilde_match_sim = zeros(2,CR.n_firms)
-    bstar_match_sim = zeros(2,CR.n_firms);
-    measures_match_sim = zeros(2,CR.n_firms);
-    for n1 in 1:CR.n_firms;
-        alpha_tilde_match_sim[:,n1] = [SC[n1].ge_1/SC[n1].ce.+SC[n1].ga_1./SC[n1].ca_1   SC[n1].ge_2/SC[n1].ce.+SC[n1].ga_2./SC[n1].ca_2]';
-        bstar_match_sim[:,n1] = try
-        ([SC[n1].ge_1; SC[n1].ge_2]*[SC[n1].ge_1 SC[n1].ge_2]./SC[n1].ce +Diagonal([(SC[n1].ga_1)^2/SC[n1].ca_1, (SC[n1].ga_2)^2/SC[n1].ca_2]) + rΣ)\view(alpha_tilde_match_sim,:,n1);
-       catch
-        fill!(down_match_sim,NaN)
-        wages_match_sim = zeros(CR.n_firms);
-        fill!(wages_match_sim,NaN);
-        measures_match_sim = zeros(2,CR.n_firms);
-        fill!(measures_match_sim,NaN);
-        Simout = SimOutputs(down_match_obs', wages_match_sim, measures_match_sim');
-        return Simout
-       end
-  
-       #simulate matched measures
-       ab = [SC[n1].ge_1 SC[n1].ge_2]./SC[n1].ce*view(bstar_match_sim,:,n1)
-       measures_match_sim[:,n1] = ab.*[SC[n1].ge_1; SC[n1].ge_2] .+ [(SC[n1].ga_1)^2/SC[n1].ca_1; (SC[n1].ga_2)^2/SC[n1].ca_2].*view(bstar_match_sim,:,n1) .+rand(Gaussian([0.0; 0.0],p_in.Σ));
-
-    end
-
+    bstar_match_sim = zeros(1,CR.n_firms);
+    measures_match_sim = zeros(1,CR.n_firms);
     S_match_sim = zeros(CR.n_firms);
     rho_m_match_sim = similar(S_match_sim);
     for n1 in 1:CR.n_firms;
-        S_match_sim[n1] = 0.5*alpha_tilde_match_sim[:,n1]'*bstar_match_sim[:,n1];
-        rho_m_match_sim[n1] = view(down_match_obs,:,n1)' * p_in.rm * up_data_sim[n1];    
-    end
+        bstar_match_sim[:,n1] = SC[n1].ga_1./SC[n1].ca_1./(SC[n1].ga_1^2/SC[n1].ca_1 + rΣ);
+  
+       #simulate matched measures
+       measures_match_sim[:,n1] = SC[n1].ga_1.*SC[n1].ga_1./SC[n1].ca_1.*view(bstar_match_sim,:,n1) .+rand(Gaussian(0.0,p_in.Σ));
+       S_match_sim[n1] = 0.5*SC[n1].ga_1./SC[n1].ca_1.*SC[n1].ga_1./SC[n1].ca_1./(SC[n1].ga_1^2/SC[n1].ca_1 + rΣ);
+       rho_m_match_sim[n1] = view(down_match_obs,:,n1)' * p_in.rm * up_data_sim[n1];    
 
+    end
     up_valuation_sim = -S_match_sim + rho_m_match_sim; #manager gets -S_match + unobs value, net of transfers
 
     # eq transfers
@@ -105,9 +88,7 @@
     measures_match = copy(measures_match_sim)'
     for n1 in 1:CR.n_firms;
         measures_match[n1,1] = up_data_obs_in[:,n1]'*p_in.zeta_1*down_match_obs[:,n1] + copy(measures_match_sim[1,n1]);
-        measures_match[n1,2] = up_data_obs_in[:,n1]'*p_in.zeta_2*down_match_obs[:,n1] + copy(measures_match_sim[2,n1]);
     end
-    bstar_match = copy(bstar_match_sim)
     Simout = SimOutputs(down_match, wages_match, measures_match);
     return Simout
     
