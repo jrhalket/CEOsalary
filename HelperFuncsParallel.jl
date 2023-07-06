@@ -2,27 +2,25 @@
      
         #Set up thetas
       
-        theta_ga_1 = copy([b[1:2]'; b[3:4]'])
-        theta_ca_1 = copy([b[5:6]'; b[7:8]'])
-        
+        theta_alpha_1 = copy([b[1:2]'; b[3:4]'])
+        zeta_1 = copy([b[5:6]'; b[7:8]'])
+
+        rm = copy(b[9:10])
+        rf = copy([b[11]; 0.0])
+
+        mean_price = exp(copy(b[12]))
+
         #set up Cov matrix for shocks to measures
     
-        sigma_1 = exp(b[9])
+        sigma_1 = exp(b[13])
         
         Σ = copy(sigma_1)
     
-        mean_price = exp(copy(b[10]))
-    
-        rm = copy(b[11:12])
-        rf = copy([b[13]; 0.0])
-    
         risk = copy(exp(b[14]))  #exp to keep risk coefficient positive
 
-        zeta_1 = copy([b[15:16]'; b[17:18]'])
      
     p = (
-        theta_ga_1 = theta_ga_1,
-        theta_ca_1 = theta_ca_1,
+        theta_alpha_1 = theta_alpha_1,
         
         Σ = Σ,
     
@@ -48,8 +46,7 @@ end
 end
 
 @everywhere struct Coefs
-    ga_1 :: Float64
-    ca_1 :: Float64
+    a_1 :: Float64
 end
 
 @everywhere function makeCoefs(updata,downdata,nfirms,p_in)
@@ -57,9 +54,8 @@ end
     C = Array{Any}(undef,nfirms)
     
     for i in 1:nfirms
-        ga_1 = exp(view(updata,:,i)'*p_in.theta_ga_1*view(downdata,:,i));
-        ca_1 = exp(view(updata,:,i)'*p_in.theta_ca_1*view(downdata,:,i));
-        C[i] = Coefs(copy(ga_1),copy(ca_1))
+        a_1 = exp(view(updata,:,i)'*p_in.theta_alpha_1*view(downdata,:,i));
+        C[i] = Coefs(copy(a_1))
     end
     
     return C
@@ -70,13 +66,10 @@ end
     
     ats = SVector{2, Float64}
     
-    γa1 = exp(up'*parm.theta_ga_1*dn);
-    ca_1 = exp(up'*parm.theta_ca_1*dn);
+    αa1 = exp(up'*parm.theta_alpha_1*dn);
  
-    ats = γa1/ca_1
-    F= (γa1).^2 / ca_1 + rΣ
-    #println(γa1, " ", ca_1, " ", rΣ," ", F)
-    ret = 0.5 * ats*ats/F
+    F= αa1 + rΣ
+    ret = 0.5 * αa1*αa1/F
     return ret
 end   
 
