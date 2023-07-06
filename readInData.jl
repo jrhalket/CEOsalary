@@ -4,7 +4,10 @@ function ReadInData(renormDummy)
     rawdataallvars = CSV.File("Combined_All2013.csv"; header=true) |> DataFrame;
 
     rawdataselectvars = rawdataallvars[:,[:CEOpos_NumJobs_NumInd, :revenue_residual, 
-                        :size_LogTotalAsset, :num_seg, :tot_yr_comp, :annual_StockReturn, :adj_roa]];
+                        :size_LogTotalAsset, :num_seg, :tdc1, :annual_StockReturn, :adj_roa]];
+    
+    #rawdataselectvars = rawdataallvars[:,[:CEOpos_NumJobs_NumInd, :revenue_residual, 
+    #                    :size_LogTotalAsset, :num_seg, :tot_yr_comp, :annual_StockReturn, :adj_roa]];
     
     rawdata_nomissing = dropmissing(rawdataselectvars);
     
@@ -12,10 +15,29 @@ function ReadInData(renormDummy)
     
     RawData = (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd) ones(length(rawdata_nomissing.revenue_residual))], 
         down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset) ones(length(rawdata_nomissing.revenue_residual))], 
-        wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
-        measures_obs = [copy(rawdata_nomissing.adj_roa)]);
+        wages_obs = copy(rawdata_nomissing.tdc1), 
+        measures_obs = copy(rawdata_nomissing.adj_roa));
+    
+    #RawData = (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd) ones(length(rawdata_nomissing.revenue_residual))], 
+    #    down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset) ones(length(rawdata_nomissing.revenue_residual))], 
+    #    wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
+    #    measures_obs = copy(rawdata_nomissing.adj_roa));
     
     if renormDummy ==1
+        # absmax = (CEOpos_NumJobs_NumInd = maximum([abs.([maximum(rawdata_nomissing.CEOpos_NumJobs_NumInd)]),
+        #                                 abs.([minimum(rawdata_nomissing.CEOpos_NumJobs_NumInd)])]),
+        #     revenue_residual = maximum([abs.([maximum(rawdata_nomissing.revenue_residual)]),
+        #                                 abs.([minimum(rawdata_nomissing.revenue_residual)])]),
+        #     size_LogTotalAsset = maximum([abs.([maximum(rawdata_nomissing.size_LogTotalAsset)]),
+        #                                 abs.([minimum(rawdata_nomissing.size_LogTotalAsset)])]),                           
+        #     num_seg = maximum([abs.([maximum(rawdata_nomissing.num_seg)]),
+        #                                 abs.([minimum(rawdata_nomissing.num_seg)])]))                           
+    
+        # RenormData =  (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd)./absmax.CEOpos_NumJobs_NumInd ones(length(rawdata_nomissing.revenue_residual))], 
+        #         down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset)./absmax.size_LogTotalAsset ones(length(rawdata_nomissing.revenue_residual))], 
+        #         wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
+        #         measures_obs = copy(rawdata_nomissing.adj_roa));
+    
         absmax = (CEOpos_NumJobs_NumInd = maximum([abs.([maximum(rawdata_nomissing.CEOpos_NumJobs_NumInd)]),
                                         abs.([minimum(rawdata_nomissing.CEOpos_NumJobs_NumInd)])]),
             revenue_residual = maximum([abs.([maximum(rawdata_nomissing.revenue_residual)]),
@@ -27,8 +49,8 @@ function ReadInData(renormDummy)
     
         RenormData =  (up_data_obs = [copy(rawdata_nomissing.CEOpos_NumJobs_NumInd)./absmax.CEOpos_NumJobs_NumInd ones(length(rawdata_nomissing.revenue_residual))], 
                 down_data_obs = [copy(rawdata_nomissing.size_LogTotalAsset)./absmax.size_LogTotalAsset ones(length(rawdata_nomissing.revenue_residual))], 
-                wages_obs = copy(rawdata_nomissing.tot_yr_comp), 
-                measures_obs = [copy(rawdata_nomissing.annual_StockReturn)]);
+                wages_obs = copy(rawdata_nomissing.tdc1), 
+                measures_obs = copy(rawdata_nomissing.adj_roa));
     
         return RenormData
     else 

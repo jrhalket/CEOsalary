@@ -29,11 +29,6 @@
     end
 
     LLp = StrucParams(b);
-    if !isposdef(LLp.Σ)  #check positive def cov matrix
-        llnf = -2.0^50
-        return llnf
-    end
-
     S_sim = Matrix{Float64}(undef,LLC.n_firms,LLC.n_firms);
     S_sim = ComputeSMatrix(LLC,Data.up_data_obs',Data.down_data_obs',LLp);
     if multithread 
@@ -58,9 +53,9 @@
         #    data[:,4] = view(measures_obs,:,1);
         #    data[:,5] = view(measures_obs,:,2);
         for i in 1:LLC.n_sim
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,1] = Data.down_data_obs[:,1] .- sim_dat[i].down_match[:,1];
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,2] = (Data.wages_obs) .- (sim_dat[i].wages_match[:]);
-            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,3] = Data.measures_obs[:,1] .- sim_dat[i].measures_match[:,1];
+            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,1] = Data.down_data_obs[:,1] - sim_dat[i].down_match[:,1];
+            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,2] = (Data.wages_obs) - (sim_dat[i].wages_match[:]);
+            dataWithSim[1+(i-1)*LLC.n_firms:i*LLC.n_firms,3] = Data.measures_obs[:,1] - sim_dat[i].measures_match[:];
         end    
         if (LLC.hmethod==1)
             #Silverman's Rule of thumb:
@@ -96,14 +91,24 @@
         for j in 1:LLC.n_sim
             if LLC.logcompdum ==0
                 like[i]+=exp( 
-                logpdf(LLC.dist(),(Data.down_data_obs[i,1] - sim_dat[j].down_match[i,1])/h[1])
-                + logpdf(LLC.dist(),(Data.wages_obs[i] - sim_dat[j].wages_match[i])/h[2])
-                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i,1])/h[3]))
-            else 
+                #logpdf(LLC.dist(),(Data.down_data_obs[i,1] - sim_dat[j].down_match[i,1])/h[1])
+                #+
+                logpdf(LLC.dist(),(Data.wages_obs[i] - sim_dat[j].wages_match[i])/h[2])
+                #+ logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i])/h[3])
+                )
+            elseif  LLC.logcompdum ==1
                 like[i]+=exp( 
                 logpdf(LLC.dist(),(Data.down_data_obs[i,1] - sim_dat[j].down_match[i,1])/h[1])
                 + logpdf(LLC.dist(),((Data.wages_obs[i] - sim_dat[j].wages_match[i])/Data.wages_obs[i])/h[2])
-                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i,1])/h[3])) 
+                + logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i])/h[3])) 
+            else
+                like[i]+=exp( 
+                #logpdf(LLC.dist(),(Data.down_data_obs[i,1] - sim_dat[j].down_match[i,1])/h[1])
+                #+
+                logpdf(LLC.dist(),(log(Data.wages_obs[i]) - log(sim_dat[j].wages_match[i]))/h[2])
+                #+ logpdf(LLC.dist(),(Data.measures_obs[i,1] - sim_dat[j].measures_match[i])/h[3])
+                )
+
             end
         end
     end

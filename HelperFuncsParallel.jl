@@ -9,12 +9,12 @@
     
         sigma_1 = exp(b[9])
         
-        Σ = copy([sigma_1])
+        Σ = copy(sigma_1)
     
         mean_price = exp(copy(b[10]))
     
         rm = copy(b[11:12])
-        rf = copy([b[13] 0.0])
+        rf = copy([b[13]; 0.0])
     
         risk = copy(exp(b[14]))  #exp to keep risk coefficient positive
 
@@ -57,8 +57,8 @@ end
     C = Array{Any}(undef,nfirms)
     
     for i in 1:nfirms
-        ga_1 = exp.(view(updata,:,i)'*p_in.theta_ga_1*view(downdata,:,i));
-        ca_1 = exp.(view(updata,:,i)'*p_in.theta_ca_1*view(downdata,:,i));
+        ga_1 = exp(view(updata,:,i)'*p_in.theta_ga_1*view(downdata,:,i));
+        ca_1 = exp(view(updata,:,i)'*p_in.theta_ca_1*view(downdata,:,i));
         C[i] = Coefs(copy(ga_1),copy(ca_1))
     end
     
@@ -70,28 +70,27 @@ end
     
     ats = SVector{2, Float64}
     
-    γa1 = exp.(up'*parm.theta_ga_1*dn);
-    ca_1 = exp.(up'*parm.theta_ca_1*dn);
+    γa1 = exp(up'*parm.theta_ga_1*dn);
+    ca_1 = exp(up'*parm.theta_ca_1*dn);
  
-    ats = [γa1/ca_1];
-    T = eltype(rΣ) # make sure it's the type of the output
-    F = ([(γa1).^2/ca_1 + rΣ], check = false) # avoids the error
-    issuccess(F) || return T(Inf) # assuming minimization, this step will be rejected
-    ret = 0.5 * ats' * (F \ ats)
-    return ret[1]
+    ats = γa1/ca_1
+    F= (γa1).^2 / ca_1 + rΣ
+    #println(γa1, " ", ca_1, " ", rΣ," ", F)
+    ret = 0.5 * ats*ats/F
+    return ret
 end   
 
 @everywhere struct SimOutputs
     down_match :: Array{Float64,2} 
     wages_match :: Array{Float64,1} 
-    measures_match :: Array{Float64,2}
+    measures_match :: Array{Float64,1}
 end
 
 
  
 @everywhere function ComputeSMatrix(params,up_data_obs_in,down_data_obs_in,p_in::NamedTuple)
     CR = params;
-    rΣ = Matrix{Float64}(undef,1,1)
+    #rΣ = Matrix{Float64}(undef,1,1)
     rΣ = p_in.risk * p_in.Σ
     S_sim = zeros(CR.n_firms,CR.n_firms);
     for n2 in 1:CR.n_firms;
@@ -117,14 +116,21 @@ function bcv2_fun(h,Data,n_firms,n_sims,logcompdum)
                     expr_2 =  pdf(Normal(),(Data.down_data_obs[i,1]-Data.down_data_obs[j,1])/h[1]) * 
                           pdf(Normal(),(Data.wages_obs[i]-Data.wages_obs[j])/h[2]) *
                           pdf(Normal(),(Data.measures_obs[i,1]-Data.measures_obs[j,1])/h[3]) 
-                else
+                elseif logcompdum ==1
                     expr_1 = ((Data.down_data_obs[i,1]-Data.down_data_obs[j,1])/h[1])^2 + 
                          (((Data.wages_obs[i]-Data.wages_obs[j])/Data.wages_obs[i])/h[2])^2 +
                         ((Data.measures_obs[i,1]-Data.measures_obs[j,1])/h[3])^2 
-                     expr_2 =  pdf(Normal(),(Data.down_data_obs[i,1]-Data.down_data_obs[j,1])/h[1]) * 
+                    expr_2 =  pdf(Normal(),(Data.down_data_obs[i,1]-Data.down_data_obs[j,1])/h[1]) * 
                         pdf(Normal(),((Data.wages_obs[i]-Data.wages_obs[j])/Data.wages_obs[i])/h[2]) *
                         pdf(Normal(),(Data.measures_obs[i,1]-Data.measures_obs[j,1])/h[3]) 
-                end
+                else 
+                    expr_1 = ((Data.down_data_obs[i,1]-Data.down_data_obs[j,1])/h[1])^2 + 
+                             ((log(Data.wages_obs[i])-log(Data.wages_obs[j]))/h[2])^2 +
+                            ((Data.measures_obs[i,1]-Data.measures_obs[j,1])/h[3])^2 
+                    expr_2 =  pdf(Normal(),(Data.down_data_obs[i,1]-Data.down_data_obs[j,1])/h[1]) * 
+                            pdf(Normal(),((log(Data.wages_obs[i])-log(Data.wages_obs[j]))/Data.wages_obs[i])/h[2]) *
+                            pdf(Normal(),(Data.measures_obs[i,1]-Data.measures_obs[j,1])/h[3]) 
+                    end
                 ll += (expr_1 - (2*3 +4)*expr_1 + (3^2 +2*3))*expr_2
             end
         end
