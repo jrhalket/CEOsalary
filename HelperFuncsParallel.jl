@@ -4,21 +4,19 @@
       
         theta_ga_1 = copy([b[1:2]'; b[3:4]'])
         theta_ca_1 = copy([b[5:6]'; b[7:8]'])
+        zeta_1 = copy([b[9:10]'; b[11:12]'])
+        rm = copy(b[13:14])
+        rf = copy([b[15]; 0.0])
         
         #set up Cov matrix for shocks to measures
+        mean_price = exp(copy(b[16]))
     
-        sigma_1 = exp(b[9])
+        sigma_1 = exp(b[17])
         
-        Σ = copy(sigma_1)
+        Σ = copy(sigma_1)      
     
-        mean_price = exp(copy(b[10]))
-    
-        rm = copy(b[11:12])
-        rf = copy([b[13]; 0.0])
-    
-        risk = copy(exp(b[14]))  #exp to keep risk coefficient positive
+        risk = copy(exp(b[18]))  #exp to keep risk coefficient positive
 
-        zeta_1 = copy([b[15:16]'; b[17:18]'])
      
     p = (
         theta_ga_1 = theta_ga_1,

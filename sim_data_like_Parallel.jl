@@ -66,7 +66,7 @@
   
        #simulate matched measures
        measures_match_sim[n1] = SC[n1].ga_1^2 / SC[n1].ca_1 * bstar_match_sim[n1] +rand(Normal(0.0,sqrt(p_in.Σ)));
-       S_match_sim[n1] = 0.5 * SC[n1].ga_1^2 / SC[n1].ca_1^2 / (SC[n1].ga_1^2 / SC[n1].ca_1 + rΣ);
+       S_match_sim[n1] = 0.5 * SC[n1].ga_1 / SC[n1].ca_1 * bstar_match_sim[n1];
        rho_m_match_sim[n1] = view(down_match_obs,:,n1)' * p_in.rm * up_data_sim[n1];    
 
     end
