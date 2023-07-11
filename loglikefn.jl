@@ -143,7 +143,7 @@
         else
             for i in 1:LLC.n_firms
                 if tau_trim[i]>0.0    
-                    ll+=tau_trim[i]*(log(like[i])-(LLC.n_sim*hall))             
+                    ll+=tau_trim[i]*(log(like[i])-log(LLC.n_sim*hall))             
                 end
             end
         end

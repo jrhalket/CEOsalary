@@ -6,10 +6,6 @@
     # Upstream x_1, x_2, delta^m
     # Downstream y_1, y_2, delta^f
 
-    # Generate Fake x and y data
-    #Σ_x = diagm([2,1])
-    #Σ_y = diagm([.5,3])
-
     rng = MersenneTwister(quasi_seed) 
     brn = rand(rng)
     c= floor(brn * 10^3)
@@ -23,7 +19,7 @@
     rho_m_sim = up_data_sim*(p_in.rm'*down_data_obs_in);
     rho_f_sim = (up_data_obs_in'*p_in.rf)*down_data_sim';
 
-    C_sim = -S_sim - rho_m_sim - rho_f_sim; #negative of pairwise quadratic surplus 
+    C_sim = -S_sim - rho_m_sim - rho_f_sim; #negative of pairwise surplus 
 
     match_sim, up_profit_sim, down_profit_sim = find_best_assignment(C_sim)
 

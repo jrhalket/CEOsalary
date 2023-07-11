@@ -94,3 +94,10 @@ function GetH_BCV2(DataIn,n_firms,n_sim,logcompdum)
      h = xbest(res_CMAE)
     return h
 end
+
+
+function writeMatlabDataFrame(h,InitData_in,FullData_in)
+
+   
+    write_matfile("matlab/InitialVars.mat",hSJ = h, InitData = mxarray(InitData_in),FullData = mxarray(FullData_in))
+end 

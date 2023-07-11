@@ -56,8 +56,10 @@ else
     h = zeros(3)
 end 
 
-Initparams = (n_firms=length(InitData.up_data_obs[:,1]), n_sim=10, trim_percent=0, hmethod=4, nparams=18, logcompdum=1, dist=Cauchy)
+Initparams = (n_firms=length(InitData.up_data_obs[:,1]), n_sim=10, trim_percent=0, hmethod=4, nparams=18, logcompdum=0, dist=Cauchy)
 
+using MATLAB
+writeMatlabDataFrame(h,InitData,FullData)
 
 igrid = Vector{Integer}(1:Compparams.nparams);              
 
@@ -71,10 +73,10 @@ b_init[18]=0.01;
 
 #optional ways to initialize parameters if files available:
 #b_init = parse.(Float64,split(last(eachline("TestNewIterate0613Cauchy.csv")),","));
-b_init = parse.(Float64,split(last(eachline("Test0703b.csv")),","));
+b_init = parse.(Float64,split(last(eachline("Test0707full.csv")),","));
 #########
 
-for i in 1:16#Compparams.nparams;
+for i in 1:Compparams.nparams;
     i_cal = deleteat!(igrid,1);
     b_cal = b_init[i_cal];
     b_est = b_init[1:i];
@@ -107,7 +109,7 @@ for i in 1:16#Compparams.nparams;
          ftol = 1e-3)
         # # # Estimated parameters: 
         b_init[1:i] = xbest(res_CMAE)
-        CSV.write("Test0707full.csv", Tables.table(b_init'), append=true) 
+        CSV.write("Test0708full.csv", Tables.table(b_init'), append=true) 
         
         
         # # P = MinimizationProblem(b_est -> -loglikepr(b_est,b_cal,i_cal,InitData,h,quasi_seed,Initparams;multithread=false), lb, ub)
@@ -120,7 +122,7 @@ for i in 1:16#Compparams.nparams;
         # #CSV.write("saminResults.csv", Tables.table(conv'), append=true) 
 end
     
-resParams = parse.(Float64,split(last(eachline("Test0707full.csv")),","));
+resParams = parse.(Float64,split(last(eachline("Test0708full.csv")),","));
 SimP = StrucParams(resParams)
 AvgSimData, SimData = CreateNewSimData(InitData,quasi_seed,Initparams,SimP;multithread=false)
 using Plots

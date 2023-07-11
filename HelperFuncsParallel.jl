@@ -55,8 +55,10 @@ end
     C = Array{Any}(undef,nfirms)
     
     for i in 1:nfirms
-        ga_1 = exp(view(updata,:,i)'*p_in.theta_ga_1*view(downdata,:,i));
-        ca_1 = exp(view(updata,:,i)'*p_in.theta_ca_1*view(downdata,:,i));
+        #ga_1 = exp(view(updata,:,i)'*p_in.theta_ga_1*view(downdata,:,i));
+        #ca_1 = exp(view(updata,:,i)'*p_in.theta_ca_1*view(downdata,:,i));
+        ga_1 = view(updata,:,i)'*p_in.theta_ga_1*view(downdata,:,i);
+        ca_1 = view(updata,:,i)'*p_in.theta_ca_1*view(downdata,:,i);
         C[i] = Coefs(copy(ga_1),copy(ca_1))
     end
     
@@ -68,8 +70,10 @@ end
     
     ats = SVector{2, Float64}
     
-    γa1 = exp(up'*parm.theta_ga_1*dn);
-    ca_1 = exp(up'*parm.theta_ca_1*dn);
+    #γa1 = exp(up'*parm.theta_ga_1*dn);
+    #ca_1 = exp(up'*parm.theta_ca_1*dn);
+    γa1 = up'*parm.theta_ga_1*dn;
+    ca_1 = up'*parm.theta_ca_1*dn;
  
     ats = γa1/ca_1
     F= (γa1).^2 / ca_1 + rΣ
