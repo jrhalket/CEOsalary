@@ -1,15 +1,22 @@
-function [downMatchobs, wages_match, measures_match]=sim_data_like(upData,downData,params,S_sim,i,CompParams)
+function [up_data, downMatchobs, wages_match, measures_match]=SimData(params,i,CompParams) 
+%creates a simulated raw data set
 
     rSigma = params.risk * params.Sigma;
 
     %set random stream
     myStream.Substream = i ;
 
+    up_data(:,1) = rand(CompParams.n_firms,1); 
+    down_data(:,1) = rand(CompParams.n_firms,1); 
+    up_data(:,2) = ones(CompParams.n_firms,1);
+    down_data(:,2) = ones(CompParams.n_firms,1);
+    S_sim = ComputeSMatrix(CompParams,up_data,down_data,params);
+    
     up_data_sim = randn(CompParams.n_firms,1);
     down_data_sim = randn(CompParams.n_firms,1);
   
-    rho_m_sim = up_data_sim*(params.rm*downData');
-    rho_f_sim = (upData*params.rf')*down_data_sim';
+    rho_m_sim = up_data_sim*(params.rm*down_data');
+    rho_f_sim = (up_data*params.rf')*down_data_sim';
 
     C_sim = S_sim + rho_m_sim + rho_f_sim; %pairwise surplus 
 
@@ -18,15 +25,15 @@ function [downMatchobs, wages_match, measures_match]=sim_data_like(upData,downDa
     %per notes in assign2d, must renormalize down_profit
     down_profit = down_profit + max(C_sim(:));
     up_profit = up_profit + max(C_sim(:));
-    
+
     %put down elements in order of their up partners.
-    downMatchobs = downData(upMatchTodown,:);
+    downMatchobs = down_data(upMatchTodown,:);
     downMatchsim = down_data_sim(upMatchTodown);
     downMatchProfit = down_profit(upMatchTodown);
 
     %make coefficients for matches
-    ga_1 = diag(exp(upData*params.theta_ga_1*downMatchobs'));
-    ca_1 = diag(exp(upData*params.theta_ca_1*downMatchobs'));
+    ga_1 = diag(exp(up_data*params.theta_ga_1*downMatchobs'));
+    ca_1 = diag(exp(up_data*params.theta_ca_1*downMatchobs'));
 
     
     bstar_match = ga_1./ca_1 ./(ga_1.^2./ca_1 + rSigma);
@@ -39,7 +46,4 @@ function [downMatchobs, wages_match, measures_match]=sim_data_like(upData,downDa
     % eq transfers
     up_prices = up_profit - up_val;
 
-    wages_match = up_prices + bstar_match.*measures_match;
-
-    measures_obs = diag(upData*params.zeta_1*downMatchobs') + measures_match;
-end
+    wages_match =  up_prices + bstar_match.*measures_match;

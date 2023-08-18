@@ -13,10 +13,12 @@ Compparams.dist='Normal';
 %Use Silverman's Rule of thumb
 h(1) = silvermanRoTBand(FullData.down_data_obs(:,1));
 h(2) = silvermanRoTBand(FullData.wages_obs(:));
-h(3) = silvermanRoTBand(FullData.measures_obs(:,1))
+h(3) = silvermanRoTBand(FullData.measures_obs(:,1));
 
 Initparams = Compparams;
 Initparams.n_firms = length(InitData.up_data_obs(:,1));
 
 
-EstimateAllParamsIteratively_initData.m
+%EstimateAllParamsIteratively_initData
+%EstimateAllParamsIteratively_SimData
+GetLogLikGrid_simdata
