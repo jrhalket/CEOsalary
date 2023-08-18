@@ -3,14 +3,15 @@ Initparams.dist = 'Cauchy';
 Initparams.trim_percent=0; 
 
 igrid = 1:Compparams.nparams;
-b_true = .1*rand(Compparams.nparams,1);
+b_true = rand(Compparams.nparams,1);
 b_true(17)=-1;
 b_true(10)=-1;
 b_true(11)=0.05;
-b_true(4) = 9;
 b_true(12:15)=0;
 global ParamScale 
 ParamScale = mean(InitData.wages_obs);
+%b_true(4) = log(ParamScale);
+b_true(8) = -log(ParamScale);
 params_true = StrucParams(b_true);
 [SimRaw.up_data_obs, SimRaw.down_data_obs, SimRaw.wages_obs, SimRaw.measures_obs]=SimData(params_true,i,Initparams) ;
 
@@ -25,7 +26,7 @@ for i = 1:Compparams.nparams
     ical(i)=[];
     b_cal = b_true(ical);
     for j = 1:length(bgrid)
-        b_est = b_true(i)+bgrid(j);
+        b_est = b_true(i)*exp(bgrid(j));
         llgridTrim(i,j) = loglikepr(b_est,b_cal,ical, SimRaw,h,Initparams);
     end
 end

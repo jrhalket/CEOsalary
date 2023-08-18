@@ -7,7 +7,7 @@ function p= StrucParams(b)
         %set up Cov matrix for shocks to measures
       %  p.mean_price = ParamScale; %exp(b(9));
     
-        p.Sigma = exp(b(10))%*ParamScale.^2;
+        p.Sigma = exp(b(10))*sqrt(ParamScale);
             
         p.risk = exp(b(11));  %exp to keep risk coefficient positive
         p.zeta_1 = [b(12:13) b(14:15)] ;

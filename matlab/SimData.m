@@ -36,8 +36,8 @@ function [up_data, downMatchobs, wages_match, measures_match]=SimData(params,i,C
     ca_1 = diag(exp(up_data*params.theta_ca_1*downMatchobs'));
 
     
-    bstar_match = ga_1./ca_1 ./(ga_1.^2./ca_1 + rSigma);
-    measures_match = ga_1.^2./ca_1 .* bstar_match + sqrt(params.Sigma)*randn(CompParams.n_firms,1);
+    bstar_match = ga_1./ca_1 ./(1./ca_1 + rSigma);
+    measures_match = 1./ca_1 .* bstar_match + sqrt(params.Sigma)*randn(CompParams.n_firms,1);
     S_match = 0.5* ga_1./ca_1 .* bstar_match;
     rho_m_match = diag(up_data_sim*(params.rm*downMatchobs'));
 

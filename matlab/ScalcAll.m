@@ -4,6 +4,6 @@ function ret=ScalcAll(up,dn,rS,parm)
     ca_1 = exp(up*parm.theta_ca_1*dn');
     
     ats = ga_1/ca_1;
-    F= (ga_1).^2 / ca_1 + rS;
+    F= 1 / ca_1 + rS;
     ret = 0.5 * ats*ats/F;
 end   
